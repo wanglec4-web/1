@@ -1158,7 +1158,7 @@ function init() {
   });
 
   // Mobile input events
-  els.mobileInput.addEventListener('keydown', handleKeyDown);
+  els.mobileInput.addEventListener('input', handleMobileInput);
   els.mobileInput.addEventListener('blur', () => {
     els.textDisplay.classList.remove('focused');
     els.focusHint.classList.remove('hidden');
@@ -1315,52 +1315,78 @@ function toggleReveal() {
 }
 
 // ========== KEY HANDLER ==========
+function processTypedChar(ch) {
+  if (!state.started) startTimer();
+
+  state.totalKeystrokes++;
+  if (state.cursorPos < state.chars.length) {
+    const expected = state.chars[state.cursorPos].char;
+    state.chars[state.cursorPos].status = (ch === expected) ? 'correct' : 'wrong';
+    if (ch !== expected) state.errors++;
+    state.cursorPos++;
+  }
+  renderText();
+  renderZhReference();
+  highlightKey(ch);
+  updateStats();
+  checkCompletion();
+}
+
+function processBackspace() {
+  if (state.cursorPos > 0) {
+    state.cursorPos--;
+    state.chars[state.cursorPos].status = 'untyped';
+  }
+  renderText();
+  renderZhReference();
+  highlightKey('Backspace');
+}
+
 function handleKeyDown(e) {
   if (state.finished) return;
 
   const ignoreKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'PageUp', 'PageDown', 'Home', 'End'];
-  
   if (ignoreKeys.includes(e.key)) return;
-
-  if (!state.started) {
-    startTimer();
-  }
 
   if (e.key === 'Backspace') {
     e.preventDefault();
-    if (state.cursorPos > 0) {
-      state.cursorPos--;
-      state.chars[state.cursorPos].status = 'untyped';
-    }
-    els.mobileInput.value = '';
-    renderText();
-    renderZhReference();
-    highlightKey('Backspace');
+    processBackspace();
     return;
   }
 
   if (e.key.length === 1) {
     e.preventDefault();
-    state.totalKeystrokes++;
-    
-    if (state.cursorPos < state.chars.length) {
-      const expected = state.chars[state.cursorPos].char;
-      if (e.key === expected) {
-        state.chars[state.cursorPos].status = 'correct';
-      } else {
-        state.chars[state.cursorPos].status = 'wrong';
-        state.errors++;
-      }
-      state.cursorPos++;
-    }
-
-    els.mobileInput.value = '';
-    renderText();
-    renderZhReference();
-    highlightKey(e.key);
-    updateStats();
-    checkCompletion();
+    processTypedChar(e.key);
   }
+}
+
+// Mobile: use input event (keydown unreliable on virtual keyboards)
+let prevMobileValue = '';
+function handleMobileInput(e) {
+  if (state.finished) return;
+
+  const val = els.mobileInput.value;
+  
+  if (!state.started && val.length > 0) {
+    startTimer();
+  }
+
+  // Process added characters
+  while (prevMobileValue.length < val.length) {
+    const idx = prevMobileValue.length;
+    processTypedChar(val[idx]);
+    prevMobileValue += val[idx];
+  }
+
+  // Process deletions
+  while (val.length < prevMobileValue.length) {
+    processBackspace();
+    prevMobileValue = prevMobileValue.slice(0, -1);
+  }
+
+  // Reset tracking (input already cleared below)
+  els.mobileInput.value = '';
+  prevMobileValue = '';
 }
 
 // ========== TIMER ==========
