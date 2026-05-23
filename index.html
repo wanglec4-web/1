@@ -285,13 +285,44 @@ body {
 .text-scroll::-webkit-scrollbar-track { background: transparent; }
 .text-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* Hidden input */
+/* Hidden input (desktop) */
+.desktop-hidden-wrap {
+  display: block;
+}
+
 .hidden-input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
   pointer-events: none;
+}
+
+/* Mobile visible input */
+.mobile-input-wrap {
+  display: none;
+}
+
+.typing-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 16px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  outline: none;
+  transition: var(--transition);
+}
+
+.typing-input::placeholder {
+  color: var(--text-dim);
+}
+
+.typing-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 /* Focus hint */
@@ -512,16 +543,24 @@ body {
 .btn-secondary:hover { border-color: var(--accent); color: #fff; }
 
 /* Responsive */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .mode-tab { padding: 8px 12px; font-size: 13px; }
   .stats { gap: 14px; padding: 12px 16px; }
   .stat-value { font-size: 18px; }
   .text-display { font-size: 18px; padding: 20px 18px; }
-  .key { min-width: 24px; height: 30px; font-size: 11px; }
-  .key.space { min-width: 140px; }
   .modal { padding: 24px 20px; }
   .zh-reference { padding: 12px 16px; }
   .zh-reference .zh-tag { font-size: 14px; padding: 4px 10px; }
+
+  /* Show mobile input, hide desktop hidden input */
+  .desktop-hidden-wrap { display: none; }
+  .mobile-input-wrap { display: block; }
+
+  /* Hide virtual keyboard on mobile (phone has real keyboard) */
+  .keyboard { display: none; }
+
+  /* Focus hint adjusted */
+  .focus-hint { display: none; }
 }
 </style>
 </head>
@@ -599,8 +638,18 @@ body {
         点击这里开始<br>选择模式和难度，然后开始你的打字之旅 🚀
       </span>
     </div>
+  </div>
+
+  <!-- Mobile visible input -->
+  <div class="mobile-input-wrap" id="mobileInputWrap">
+    <input class="typing-input" id="mobileInput" placeholder="点这里开始打字..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  </div>
+
+  <!-- Desktop hidden input -->
+  <div class="desktop-hidden-wrap">
     <input class="hidden-input" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
   </div>
+
   <div class="focus-hint" id="focusHint">← 点击上方区域开始打字</div>
 
   <!-- Keyboard -->
@@ -1046,6 +1095,7 @@ const els = {
   textScroll: document.getElementById('textScroll'),
   textPlaceholder: document.getElementById('textPlaceholder'),
   hiddenInput: document.getElementById('hiddenInput'),
+  mobileInput: document.getElementById('mobileInput'),
   focusHint: document.getElementById('focusHint'),
   timer: document.getElementById('timer'),
   wpm: document.getElementById('wpm'),
@@ -1067,6 +1117,10 @@ const els = {
 };
 
 // ========== INIT ==========
+function getActiveInput() {
+  return window.innerWidth <= 768 ? els.mobileInput : els.hiddenInput;
+}
+
 function init() {
   // Mode tabs
   document.querySelectorAll('.mode-tab').forEach(btn => {
@@ -1077,27 +1131,39 @@ function init() {
     btn.addEventListener('click', () => switchDiff(btn.dataset.diff));
   });
 
-  // Click on text display to focus
+  // Click on text display to focus active input
   els.textDisplay.addEventListener('click', () => {
+    getActiveInput().focus();
+    els.textDisplay.classList.add('focused');
+    els.focusHint.classList.add('hidden');
+  });
+
+  // Click on keyboard (desktop)
+  const kb = document.getElementById('keyboard');
+  kb.addEventListener('click', () => {
     els.hiddenInput.focus();
     els.textDisplay.classList.add('focused');
     els.focusHint.classList.add('hidden');
   });
 
-  // Click on keyboard
-  document.getElementById('keyboard').addEventListener('click', () => {
-    els.hiddenInput.focus();
-    els.textDisplay.classList.add('focused');
-    els.focusHint.classList.add('hidden');
-  });
-
-  // Hidden input events
+  // Desktop hidden input events
   els.hiddenInput.addEventListener('keydown', handleKeyDown);
   els.hiddenInput.addEventListener('blur', () => {
     els.textDisplay.classList.remove('focused');
     els.focusHint.classList.remove('hidden');
   });
   els.hiddenInput.addEventListener('focus', () => {
+    els.textDisplay.classList.add('focused');
+    els.focusHint.classList.add('hidden');
+  });
+
+  // Mobile input events
+  els.mobileInput.addEventListener('keydown', handleKeyDown);
+  els.mobileInput.addEventListener('blur', () => {
+    els.textDisplay.classList.remove('focused');
+    els.focusHint.classList.remove('hidden');
+  });
+  els.mobileInput.addEventListener('focus', () => {
     els.textDisplay.classList.add('focused');
     els.focusHint.classList.add('hidden');
   });
@@ -1181,7 +1247,8 @@ function generateText() {
   clearKeyboardHighlight();
   updateStats();
   els.hiddenInput.value = '';
-  els.hiddenInput.focus();
+  els.mobileInput.value = '';
+  getActiveInput().focus();
   els.textDisplay.classList.add('focused');
   els.focusHint.classList.add('hidden');
 }
@@ -1229,7 +1296,8 @@ function retry() {
   clearKeyboardHighlight();
   updateStats();
   els.hiddenInput.value = '';
-  els.hiddenInput.focus();
+  els.mobileInput.value = '';
+  getActiveInput().focus();
   els.textDisplay.classList.add('focused');
 }
 
@@ -1264,6 +1332,7 @@ function handleKeyDown(e) {
       state.cursorPos--;
       state.chars[state.cursorPos].status = 'untyped';
     }
+    els.mobileInput.value = '';
     renderText();
     renderZhReference();
     highlightKey('Backspace');
@@ -1285,6 +1354,7 @@ function handleKeyDown(e) {
       state.cursorPos++;
     }
 
+    els.mobileInput.value = '';
     renderText();
     renderZhReference();
     highlightKey(e.key);
