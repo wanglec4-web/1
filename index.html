@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语打字练习 - TypeCraft</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f0f1a;
+  --panel: #1a1a2e;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --correct: #4ade80;
+  --wrong: #ef4444;
+  --wrong-bg: rgba(239, 68, 68, 0.2);
+  --untyped: #64748b;
+  --accent: #818cf8;
+  --accent-glow: rgba(129, 140, 248, 0.3);
+  --cursor: #facc15;
+  --border: #2d2d4a;
+  --key-bg: #252540;
+  --key-highlight: #818cf8;
+  --success: #22c55e;
+  --radius: 12px;
+  --transition: 0.2s ease;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-image: 
+    radial-gradient(ellipse at 50% 0%, rgba(129,140,248,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(74,222,128,0.05) 0%, transparent 50%);
+}
+
+.container {
+  width: 100%;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.header .subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.mode-tabs, .diff-tabs {
+  display: flex;
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mode-tab, .diff-tab {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.mode-tab:hover, .diff-tab:hover {
+  color: var(--text);
+}
+
+.mode-tab.active, .diff-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+.mode-tab.dictation {
+  background: rgba(250, 204, 21, 0.1);
+}
+.mode-tab.dictation.active {
+  background: #f59e0b;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Stats Bar */
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 14px 24px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-icon {
+  font-size: 18px;
+  opacity: 0.7;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Chinese Translation Reference */
+.zh-reference {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.zh-reference .zh-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.zh-reference .zh-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.zh-reference .zh-tag .zh-index {
+  font-size: 11px;
+  color: rgba(251, 191, 36, 0.5);
+  font-weight: 400;
+}
+
+.zh-reference .zh-tag.current-word {
+  background: rgba(250, 204, 21, 0.25);
+  border-color: #facc15;
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.2);
+}
+
+.zh-reference .zh-tag.done {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+}
+
+.zh-reference .zh-tag.wrong-word {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* Text Display */
+.text-display {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  min-height: 140px;
+  font-size: 22px;
+  line-height: 1.8;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.text-display.focused {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.text-char {
+  display: inline;
+  transition: color 0.1s, background-color 0.08s;
+  border-radius: 3px;
+  padding: 1px 0;
+}
+
+.text-char.untyped { color: var(--untyped); }
+.text-char.correct { color: var(--correct); }
+.text-char.wrong { 
+  color: var(--wrong);
+  background: var(--wrong-bg);
+}
+.text-char.current {
+  border-left: 2px solid var(--cursor);
+  animation: blink 1s step-end infinite;
+  padding-left: 1px;
+}
+
+@keyframes blink {
+  0%, 100% { border-color: var(--cursor); }
+  50% { border-color: transparent; }
+}
+
+.text-placeholder {
+  color: var(--text-dim);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* Auto-scroll wrapper */
+.text-scroll {
+  max-height: 280px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding-right: 4px;
+}
+
+.text-scroll::-webkit-scrollbar { width: 6px; }
+.text-scroll::-webkit-scrollbar-track { background: transparent; }
+.text-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Hidden input */
+.hidden-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Focus hint */
+.focus-hint {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: -8px;
+  opacity: 0.7;
+  transition: var(--transition);
+}
+
+.focus-hint.hidden { opacity: 0; }
+
+/* Reveal toggle for dictation */
+.reveal-toggle {
+  text-align: center;
+  margin-top: -12px;
+}
+
+.reveal-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--key-bg);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.reveal-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.reveal-btn.revealed {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+}
+
+/* Keyboard */
+.keyboard {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.key-row {
+  display: flex;
+  gap: 4px;
+}
+
+.key {
+  min-width: 32px;
+  height: 36px;
+  padding: 0 6px;
+  background: var(--key-bg);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  transition: var(--transition);
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.key.space {
+  min-width: 240px;
+  font-size: 11px;
+}
+
+.key.highlight {
+  background: var(--key-highlight);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+  transform: translateY(-2px);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px 40px;
+  text-align: center;
+  max-width: 420px;
+  width: 90%;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal .trophy { font-size: 48px; margin-bottom: 12px; }
+.modal h2 { font-size: 24px; margin-bottom: 20px; color: var(--text); }
+.modal .result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.result-card {
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.result-card .val {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-card .lbl {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.result-card .val.green { color: var(--success); }
+.result-card .val.yellow { color: var(--cursor); }
+.result-card .val.red { color: var(--wrong); }
+.result-card .val.accent { color: var(--accent); }
+
+/* Word review in modal for dictation */
+.word-review {
+  margin-bottom: 20px;
+  text-align: left;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.word-review .review-item {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.word-review .review-zh {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.word-review .review-en {
+  color: var(--text);
+}
+
+.word-review .review-en.wrong {
+  color: var(--wrong);
+  text-decoration: line-through;
+  text-decoration-color: rgba(239,68,68,0.4);
+}
+
+.modal .btn-group {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
+
+.btn-secondary {
+  background: var(--key-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover { border-color: var(--accent); color: #fff; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .mode-tab { padding: 8px 12px; font-size: 13px; }
+  .stats { gap: 14px; padding: 12px 16px; }
+  .stat-value { font-size: 18px; }
+  .text-display { font-size: 18px; padding: 20px 18px; }
+  .key { min-width: 24px; height: 30px; font-size: 11px; }
+  .key.space { min-width: 140px; }
+  .modal { padding: 24px 20px; }
+  .zh-reference { padding: 12px 16px; }
+  .zh-reference .zh-tag { font-size: 14px; padding: 4px 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>TypeCraft</h1>
+    <div class="subtitle">边打边学，英语打字两不误</div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="words">📝 单词</button>
+      <button class="mode-tab dictation" data-mode="dictation">🧠 默写</button>
+      <button class="mode-tab" data-mode="sentences">📖 短句</button>
+      <button class="mode-tab" data-mode="paragraphs">📄 段落</button>
+    </div>
+    <div class="diff-tabs" id="diffTabs">
+      <button class="diff-tab active" data-diff="easy">初级</button>
+      <button class="diff-tab" data-diff="medium">中级</button>
+      <button class="diff-tab" data-diff="hard">高级</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-item">
+      <span class="stat-icon">⏱️</span>
+      <div>
+        <div class="stat-value" id="timer">0:00</div>
+        <div class="stat-label">用时</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-icon">⚡</span>
+      <div>
+        <div class="stat-value" id="wpm">0</div>
+        <div class="stat-label">WPM</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-icon">🎯</span>
+      <div>
+        <div class="stat-value" id="accuracy">100%</div>
+        <div class="stat-label">准确率</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-icon">📝</span>
+      <div>
+        <div class="stat-value" id="progress">0%</div>
+        <div class="stat-label">进度</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chinese translation reference (dictation mode) -->
+  <div class="zh-reference" id="zhReference" style="display:none">
+    <span class="zh-label">🇨🇳 中文</span>
+    <div id="zhTags"></div>
+  </div>
+
+  <!-- Reveal toggle (dictation mode) -->
+  <div class="reveal-toggle" id="revealToggle" style="display:none">
+    <button class="reveal-btn" id="revealBtn">👁️ 显示英文提示</button>
+  </div>
+
+  <!-- Text Display -->
+  <div class="text-display" id="textDisplay" tabindex="0">
+    <div class="text-scroll" id="textScroll">
+      <span class="text-placeholder" id="textPlaceholder">
+        点击这里开始<br>选择模式和难度，然后开始你的打字之旅 🚀
+      </span>
+    </div>
+    <input class="hidden-input" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  </div>
+  <div class="focus-hint" id="focusHint">← 点击上方区域开始打字</div>
+
+  <!-- Keyboard -->
+  <div class="keyboard" id="keyboard">
+    <div class="key-row">
+      <span class="key">q</span><span class="key">w</span><span class="key">e</span><span class="key">r</span><span class="key">t</span><span class="key">y</span><span class="key">u</span><span class="key">i</span><span class="key">o</span><span class="key">p</span>
+    </div>
+    <div class="key-row">
+      <span class="key">a</span><span class="key">s</span><span class="key">d</span><span class="key">f</span><span class="key">g</span><span class="key">h</span><span class="key">j</span><span class="key">k</span><span class="key">l</span>
+    </div>
+    <div class="key-row">
+      <span class="key">z</span><span class="key">x</span><span class="key">c</span><span class="key">v</span><span class="key">b</span><span class="key">n</span><span class="key">m</span>
+    </div>
+    <div class="key-row">
+      <span class="key space">SPACE</span>
+    </div>
+  </div>
+</div>
+
+<!-- Results Modal -->
+<div class="modal-overlay" id="modalOverlay" style="display:none">
+  <div class="modal">
+    <div class="trophy" id="trophyEmoji">🏆</div>
+    <h2 id="modalTitle">练习完成！</h2>
+    <div class="result-grid">
+      <div class="result-card"><div class="val yellow" id="resultTime">0:00</div><div class="lbl">用时</div></div>
+      <div class="result-card"><div class="val accent" id="resultWPM">0</div><div class="lbl">WPM</div></div>
+      <div class="result-card"><div class="val green" id="resultAcc">0%</div><div class="lbl">准确率</div></div>
+      <div class="result-card"><div class="val red" id="resultErrors">0</div><div class="lbl">错误数</div></div>
+    </div>
+    <div class="word-review" id="wordReview" style="display:none"></div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" id="btnRetry">重试本题</button>
+      <button class="btn btn-primary" id="btnNext">换一题</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+const data = {
+  words: {
+    easy: [
+      { en: "act", zh: "行动" },        { en: "age", zh: "年龄" },
+      { en: "air", zh: "空气" },        { en: "arm", zh: "手臂" },
+      { en: "art", zh: "艺术" },        { en: "bag", zh: "包" },
+      { en: "ball", zh: "球" },         { en: "bear", zh: "熊" },
+      { en: "bell", zh: "铃铛" },       { en: "bird", zh: "鸟" },
+      { en: "bite", zh: "咬" },         { en: "blue", zh: "蓝色" },
+      { en: "boat", zh: "船" },         { en: "book", zh: "书" },
+      { en: "cake", zh: "蛋糕" },       { en: "call", zh: "打电话" },
+      { en: "card", zh: "卡片" },       { en: "care", zh: "关心" },
+      { en: "cat", zh: "猫" },          { en: "city", zh: "城市" },
+      { en: "cold", zh: "冷" },         { en: "cook", zh: "烹饪" },
+      { en: "cool", zh: "凉爽" },       { en: "corn", zh: "玉米" },
+      { en: "dark", zh: "黑暗" },       { en: "date", zh: "日期" },
+      { en: "dead", zh: "死的" },       { en: "dear", zh: "亲爱的" },
+      { en: "deep", zh: "深" },         { en: "desk", zh: "书桌" },
+      { en: "dish", zh: "盘子" },       { en: "dog", zh: "狗" },
+      { en: "door", zh: "门" },         { en: "draw", zh: "画" },
+      { en: "drop", zh: "掉落" },       { en: "duck", zh: "鸭子" },
+      { en: "east", zh: "东方" },       { en: "easy", zh: "容易" },
+      { en: "edge", zh: "边缘" },       { en: "face", zh: "脸" },
+      { en: "fail", zh: "失败" },       { en: "fair", zh: "公平" },
+      { en: "fall", zh: "落下" },       { en: "fast", zh: "快" },
+      { en: "fill", zh: "填满" },       { en: "find", zh: "找到" },
+      { en: "fine", zh: "好的" },       { en: "fire", zh: "火" },
+      { en: "fish", zh: "鱼" },         { en: "flag", zh: "旗" },
+      { en: "food", zh: "食物" },       { en: "foot", zh: "脚" },
+      { en: "free", zh: "自由" },       { en: "full", zh: "满的" },
+      { en: "game", zh: "游戏" },       { en: "gate", zh: "大门" },
+      { en: "gift", zh: "礼物" },       { en: "girl", zh: "女孩" },
+      { en: "give", zh: "给" },         { en: "glad", zh: "高兴" },
+      { en: "gold", zh: "金子" },       { en: "good", zh: "好" },
+      { en: "grow", zh: "生长" },       { en: "half", zh: "一半" },
+      { en: "hand", zh: "手" },         { en: "hang", zh: "悬挂" },
+      { en: "hard", zh: "困难" },       { en: "hate", zh: "恨" },
+      { en: "have", zh: "有" },         { en: "head", zh: "头" },
+      { en: "hear", zh: "听见" },       { en: "heat", zh: "热" },
+      { en: "help", zh: "帮助" },       { en: "high", zh: "高" },
+      { en: "hill", zh: "山" },         { en: "hold", zh: "握住" },
+      { en: "hole", zh: "洞" },         { en: "home", zh: "家" },
+      { en: "hope", zh: "希望" },       { en: "huge", zh: "巨大" },
+      { en: "hurt", zh: "伤害" },       { en: "join", zh: "加入" },
+      { en: "jump", zh: "跳" },         { en: "just", zh: "正好" },
+      { en: "keep", zh: "保持" },       { en: "kill", zh: "杀死" },
+      { en: "kind", zh: "友善" },       { en: "king", zh: "国王" },
+      { en: "know", zh: "知道" },       { en: "lamp", zh: "灯" },
+      { en: "land", zh: "土地" },       { en: "last", zh: "最后" },
+      { en: "lazy", zh: "懒惰" },       { en: "lead", zh: "领导" },
+      { en: "life", zh: "生命" },       { en: "lift", zh: "举起" },
+      { en: "line", zh: "线" },         { en: "list", zh: "列表" },
+      { en: "long", zh: "长" },         { en: "look", zh: "看" },
+      { en: "lose", zh: "失去" },       { en: "loud", zh: "大声" },
+      { en: "love", zh: "爱" },         { en: "luck", zh: "运气" },
+      { en: "mail", zh: "邮件" },       { en: "main", zh: "主要" },
+      { en: "mark", zh: "标记" },       { en: "milk", zh: "牛奶" },
+      { en: "mind", zh: "思想" },       { en: "miss", zh: "错过" },
+      { en: "moon", zh: "月亮" },       { en: "move", zh: "移动" },
+      { en: "name", zh: "名字" },       { en: "near", zh: "附近" },
+      { en: "need", zh: "需要" },       { en: "next", zh: "下一个" },
+      { en: "nice", zh: "美好" },       { en: "noise", zh: "噪音" },
+      { en: "none", zh: "没有" },       { en: "note", zh: "笔记" },
+      { en: "open", zh: "打开" },       { en: "page", zh: "页" },
+      { en: "pale", zh: "苍白" },       { en: "park", zh: "公园" },
+      { en: "pass", zh: "通过" },       { en: "past", zh: "过去" },
+      { en: "pick", zh: "挑选" },       { en: "plan", zh: "计划" },
+      { en: "play", zh: "玩" },         { en: "post", zh: "邮寄" },
+      { en: "pull", zh: "拉" },         { en: "push", zh: "推" },
+      { en: "race", zh: "比赛" },       { en: "rain", zh: "雨" },
+      { en: "read", zh: "读" },         { en: "rich", zh: "富有" },
+      { en: "ride", zh: "骑" },         { en: "ring", zh: "戒指" },
+      { en: "rise", zh: "上升" },       { en: "road", zh: "路" },
+      { en: "rock", zh: "岩石" },       { en: "roll", zh: "滚动" },
+      { en: "room", zh: "房间" },       { en: "root", zh: "根" },
+      { en: "rule", zh: "规则" },       { en: "rush", zh: "冲" },
+      { en: "safe", zh: "安全" },       { en: "sand", zh: "沙子" },
+      { en: "save", zh: "保存" },       { en: "seat", zh: "座位" },
+      { en: "seek", zh: "寻找" },       { en: "ship", zh: "船" },
+      { en: "shop", zh: "商店" },       { en: "show", zh: "展示" },
+      { en: "sick", zh: "生病" },       { en: "sign", zh: "标志" },
+      { en: "sing", zh: "唱歌" },       { en: "size", zh: "大小" },
+      { en: "slow", zh: "慢" },         { en: "snow", zh: "雪" },
+      { en: "soft", zh: "柔软" },       { en: "song", zh: "歌" },
+      { en: "soon", zh: "很快" },       { en: "sort", zh: "种类" },
+      { en: "star", zh: "星星" },       { en: "stay", zh: "停留" },
+      { en: "step", zh: "步骤" },       { en: "stop", zh: "停止" },
+      { en: "such", zh: "如此" },       { en: "sure", zh: "确定" },
+      { en: "swim", zh: "游泳" },       { en: "take", zh: "拿" },
+      { en: "talk", zh: "说话" },       { en: "tall", zh: "高" },
+      { en: "team", zh: "团队" },       { en: "tell", zh: "告诉" },
+      { en: "thin", zh: "瘦" },         { en: "town", zh: "城镇" },
+      { en: "tree", zh: "树" },         { en: "trip", zh: "旅行" },
+      { en: "true", zh: "真实" },       { en: "turn", zh: "转动" },
+      { en: "type", zh: "类型" },       { en: "unit", zh: "单位" },
+      { en: "very", zh: "非常" },       { en: "view", zh: "视野" },
+      { en: "wait", zh: "等待" },       { en: "wake", zh: "醒来" },
+      { en: "walk", zh: "走路" },       { en: "wall", zh: "墙" },
+      { en: "warm", zh: "温暖" },       { en: "wave", zh: "波浪" },
+      { en: "week", zh: "周" },         { en: "west", zh: "西方" },
+      { en: "wide", zh: "宽" },         { en: "wild", zh: "野生" },
+      { en: "will", zh: "将会" },       { en: "wind", zh: "风" },
+      { en: "wise", zh: "明智" },       { en: "wish", zh: "愿望" },
+      { en: "wood", zh: "木头" },       { en: "word", zh: "单词" },
+      { en: "work", zh: "工作" },       { en: "year", zh: "年" },
+    ],
+    medium: [
+      { en: "abandon", zh: "放弃" },      { en: "ability", zh: "能力" },
+      { en: "abroad", zh: "国外" },       { en: "absence", zh: "缺席" },
+      { en: "absorb", zh: "吸收" },       { en: "abstract", zh: "抽象的" },
+      { en: "abundant", zh: "丰富的" },    { en: "academy", zh: "学院" },
+      { en: "achieve", zh: "达到" },      { en: "acquire", zh: "获得" },
+      { en: "address", zh: "地址" },      { en: "adequate", zh: "足够的" },
+      { en: "admire", zh: "钦佩" },       { en: "advance", zh: "前进" },
+      { en: "ancient", zh: "古代" },      { en: "approve", zh: "批准" },
+      { en: "attempt", zh: "尝试" },      { en: "balance", zh: "平衡" },
+      { en: "bargain", zh: "讨价还价" },  { en: "benefit", zh: "利益" },
+      { en: "blanket", zh: "毯子" },      { en: "boundary", zh: "边界" },
+      { en: "cabinet", zh: "橱柜" },      { en: "capable", zh: "有能力" },
+      { en: "capture", zh: "捕获" },      { en: "carrier", zh: "载体" },
+      { en: "central", zh: "中心" },      { en: "channel", zh: "频道" },
+      { en: "chapter", zh: "章节" },      { en: "climate", zh: "气候" },
+      { en: "college", zh: "大学" },      { en: "combine", zh: "结合" },
+      { en: "command", zh: "命令" },      { en: "compact", zh: "紧凑" },
+      { en: "compare", zh: "比较" },      { en: "compose", zh: "组成" },
+      { en: "concept", zh: "概念" },      { en: "concern", zh: "关心" },
+      { en: "conduct", zh: "行为" },      { en: "confirm", zh: "确认" },
+      { en: "connect", zh: "连接" },      { en: "conquer", zh: "征服" },
+      { en: "consist", zh: "由...组成" }, { en: "contact", zh: "联系" },
+      { en: "contain", zh: "包含" },      { en: "context", zh: "上下文" },
+      { en: "correct", zh: "正确" },      { en: "cottage", zh: "小屋" },
+      { en: "council", zh: "委员会" },     { en: "courage", zh: "勇气" },
+      { en: "creative", zh: "创造性" },    { en: "critic", zh: "批评家" },
+      { en: "culture", zh: "文化" },      { en: "current", zh: "当前" },
+      { en: "declare", zh: "宣布" },      { en: "decline", zh: "下降" },
+      { en: "defense", zh: "防御" },      { en: "deliver", zh: "递送" },
+      { en: "despite", zh: "尽管" },      { en: "destroy", zh: "破坏" },
+      { en: "detect", zh: "发现" },       { en: "digital", zh: "数字的" },
+      { en: "discuss", zh: "讨论" },      { en: "display", zh: "展示" },
+      { en: "dispute", zh: "争论" },      { en: "distant", zh: "遥远" },
+      { en: "disturb", zh: "打扰" },      { en: "diverse", zh: "多样" },
+      { en: "domestic", zh: "国内的" },    { en: "economy", zh: "经济" },
+      { en: "educate", zh: "教育" },      { en: "element", zh: "元素" },
+      { en: "embrace", zh: "拥抱" },      { en: "emotion", zh: "情感" },
+      { en: "employ", zh: "雇用" },       { en: "enforce", zh: "执行" },
+      { en: "enhance", zh: "增强" },      { en: "enormous", zh: "巨大的" },
+      { en: "episode", zh: "插曲" },      { en: "essence", zh: "本质" },
+      { en: "evident", zh: "明显" },      { en: "examine", zh: "检查" },
+      { en: "explore", zh: "探索" },      { en: "express", zh: "表达" },
+      { en: "extreme", zh: "极端" },      { en: "factory", zh: "工厂" },
+      { en: "feature", zh: "特征" },      { en: "fiction", zh: "小说" },
+      { en: "finance", zh: "金融" },      { en: "flexible", zh: "灵活" },
+      { en: "foreign", zh: "外国" },      { en: "freedom", zh: "自由" },
+      { en: "frequent", zh: "频繁" },     { en: "furnish", zh: "提供" },
+      { en: "general", zh: "一般" },      { en: "genuine", zh: "真正的" },
+      { en: "gesture", zh: "手势" },      { en: "gradual", zh: "逐渐" },
+      { en: "grammar", zh: "语法" },      { en: "harvest", zh: "收获" },
+      { en: "horizon", zh: "地平线" },    { en: "husband", zh: "丈夫" },
+      { en: "identify", zh: "识别" },     { en: "impress", zh: "给...印象" },
+      { en: "incident", zh: "事件" },     { en: "indicate", zh: "表明" },
+      { en: "inspect", zh: "检查" },      { en: "inspire", zh: "激励" },
+      { en: "instruct", zh: "指导" },     { en: "intense", zh: "强烈" },
+      { en: "involve", zh: "涉及" },      { en: "justice", zh: "正义" },
+      { en: "kitchen", zh: "厨房" },      { en: "landlord", zh: "房东" },
+      { en: "liberal", zh: "自由" },      { en: "liberty", zh: "自由权" },
+      { en: "limited", zh: "有限的" },    { en: "measure", zh: "测量" },
+      { en: "miracle", zh: "奇迹" },      { en: "mission", zh: "使命" },
+      { en: "nervous", zh: "紧张" },      { en: "network", zh: "网络" },
+      { en: "observe", zh: "观察" },      { en: "obvious", zh: "明显" },
+      { en: "operate", zh: "操作" },      { en: "opinion", zh: "意见" },
+      { en: "organic", zh: "有机的" },    { en: "partner", zh: "伙伴" },
+      { en: "passage", zh: "通道" },      { en: "passion", zh: "激情" },
+      { en: "patient", zh: "耐心" },      { en: "pension", zh: "养老金" },
+      { en: "persist", zh: "坚持" },      { en: "portion", zh: "部分" },
+      { en: "possess", zh: "拥有" },      { en: "poverty", zh: "贫困" },
+      { en: "precise", zh: "精确" },      { en: "private", zh: "私人" },
+      { en: "process", zh: "过程" },      { en: "promote", zh: "促进" },
+      { en: "propose", zh: "提议" },      { en: "purpose", zh: "目的" },
+      { en: "pursuit", zh: "追求" },      { en: "quality", zh: "质量" },
+      { en: "reality", zh: "现实" },      { en: "receive", zh: "收到" },
+      { en: "recover", zh: "恢复" },      { en: "reflect", zh: "反映" },
+      { en: "regular", zh: "规律" },      { en: "reject", zh: "拒绝" },
+      { en: "relief", zh: "缓解" },       { en: "rely", zh: "依赖" },
+      { en: "remind", zh: "提醒" },       { en: "replace", zh: "替换" },
+      { en: "request", zh: "请求" },      { en: "require", zh: "要求" },
+      { en: "resolve", zh: "解决" },      { en: "respond", zh: "回应" },
+      { en: "routine", zh: "常规" },      { en: "scatter", zh: "分散" },
+      { en: "scholar", zh: "学者" },      { en: "section", zh: "部分" },
+      { en: "serious", zh: "严肃" },      { en: "shelter", zh: "庇护所" },
+      { en: "silence", zh: "沉默" },      { en: "similar", zh: "相似" },
+      { en: "sincere", zh: "真诚" },      { en: "skilled", zh: "熟练" },
+      { en: "somehow", zh: "不知何故" },  { en: "strange", zh: "奇怪" },
+      { en: "strategy", zh: "策略" },     { en: "strength", zh: "力量" },
+      { en: "struggle", zh: "奋斗" },     { en: "subject", zh: "主题" },
+      { en: "supply", zh: "供应" },       { en: "support", zh: "支持" },
+      { en: "surface", zh: "表面" },      { en: "survive", zh: "幸存" },
+      { en: "suspect", zh: "怀疑" },      { en: "tension", zh: "紧张" },
+      { en: "threat", zh: "威胁" },       { en: "tolerate", zh: "容忍" },
+      { en: "tradition", zh: "传统" },    { en: "transfer", zh: "转移" },
+      { en: "triumph", zh: "胜利" },      { en: "typical", zh: "典型" },
+      { en: "ultimate", zh: "最终" },     { en: "universe", zh: "宇宙" },
+      { en: "urgent", zh: "紧急" },       { en: "various", zh: "各种" },
+      { en: "vehicle", zh: "车辆" },      { en: "venture", zh: "冒险" },
+      { en: "violence", zh: "暴力" },     { en: "visible", zh: "可见" },
+      { en: "volcano", zh: "火山" },      { en: "volunteer", zh: "志愿者" },
+      { en: "welfare", zh: "福利" },      { en: "witness", zh: "目击" },
+      { en: "worried", zh: "担心" },      { en: "worship", zh: "崇拜" },
+    ],
+    hard: [
+      { en: "accelerate", zh: "加速" },       { en: "accompany", zh: "陪伴" },
+      { en: "acknowledge", zh: "承认" },      { en: "adjustment", zh: "调整" },
+      { en: "adolescent", zh: "青少年" },     { en: "aggressive", zh: "侵略的" },
+      { en: "alternative", zh: "替代方案" },  { en: "altitude", zh: "海拔" },
+      { en: "ambassador", zh: "大使" },       { en: "anticipate", zh: "预期" },
+      { en: "apparatus", zh: "装置" },        { en: "appreciate", zh: "欣赏" },
+      { en: "appropriate", zh: "适当的" },    { en: "architect", zh: "建筑师" },
+      { en: "assembly", zh: "集会" },         { en: "assessment", zh: "评估" },
+      { en: "assignment", zh: "任务" },       { en: "atmosphere", zh: "气氛" },
+      { en: "authority", zh: "权威" },        { en: "bachelor", zh: "学士" },
+      { en: "bankruptcy", zh: "破产" },       { en: "bargaining", zh: "谈判" },
+      { en: "bestseller", zh: "畅销书" },     { en: "biography", zh: "传记" },
+      { en: "breakthrough", zh: "突破" },     { en: "bureaucracy", zh: "官僚" },
+      { en: "campaign", zh: "运动" },         { en: "capability", zh: "能力" },
+      { en: "catastrophe", zh: "灾难" },      { en: "challenging", zh: "挑战性" },
+      { en: "champion", zh: "冠军" },         { en: "circumstance", zh: "环境" },
+      { en: "civilization", zh: "文明" },     { en: "commission", zh: "委员会" },
+      { en: "commitment", zh: "承诺" },       { en: "compensate", zh: "补偿" },
+      { en: "competence", zh: "能力" },       { en: "complicated", zh: "复杂" },
+      { en: "concentrate", zh: "集中" },      { en: "conference", zh: "会议" },
+      { en: "confidence", zh: "信心" },       { en: "confront", zh: "面对" },
+      { en: "conscience", zh: "良心" },       { en: "consequence", zh: "后果" },
+      { en: "conservative", zh: "保守的" },   { en: "consistent", zh: "一致的" },
+      { en: "conspiracy", zh: "阴谋" },       { en: "constitution", zh: "宪法" },
+      { en: "contemporary", zh: "当代的" },   { en: "controversy", zh: "争议" },
+      { en: "convenience", zh: "便利" },      { en: "conventional", zh: "传统的" },
+      { en: "coordinate", zh: "协调" },       { en: "corporation", zh: "公司" },
+      { en: "correspond", zh: "对应" },       { en: "curiosity", zh: "好奇心" },
+      { en: "dedication", zh: "奉献" },       { en: "democracy", zh: "民主" },
+      { en: "demonstrate", zh: "证明" },      { en: "depression", zh: "抑郁" },
+      { en: "destination", zh: "目的地" },    { en: "determine", zh: "决定" },
+      { en: "dictionary", zh: "字典" },       { en: "diplomatic", zh: "外交" },
+      { en: "discipline", zh: "纪律" },       { en: "discriminate", zh: "歧视" },
+      { en: "distinction", zh: "区别" },      { en: "distinguish", zh: "区分" },
+      { en: "distribute", zh: "分配" },       { en: "ecological", zh: "生态的" },
+      { en: "eliminate", zh: "消除" },        { en: "embarrass", zh: "尴尬" },
+      { en: "emergency", zh: "紧急" },        { en: "enthusiasm", zh: "热情" },
+      { en: "environment", zh: "环境" },      { en: "equipment", zh: "设备" },
+      { en: "equivalent", zh: "等价" },       { en: "especially", zh: "尤其" },
+      { en: "establish", zh: "建立" },        { en: "evaluation", zh: "评价" },
+      { en: "eventually", zh: "最终" },       { en: "exaggerate", zh: "夸张" },
+      { en: "excellence", zh: "卓越" },       { en: "exception", zh: "例外" },
+      { en: "executive", zh: "执行的" },      { en: "experiment", zh: "实验" },
+      { en: "explanation", zh: "解释" },      { en: "extraordinary", zh: "非凡" },
+      { en: "fascinating", zh: "迷人" },      { en: "fluctuation", zh: "波动" },
+      { en: "foundation", zh: "基础" },       { en: "fundamental", zh: "基本" },
+      { en: "generation", zh: "一代人" },     { en: "guarantee", zh: "保证" },
+      { en: "hesitation", zh: "犹豫" },       { en: "illustrate", zh: "说明" },
+      { en: "immigrant", zh: "移民" },        { en: "implication", zh: "含义" },
+      { en: "impossible", zh: "不可能" },     { en: "impressive", zh: "印象深刻" },
+      { en: "incredible", zh: "难以置信" },   { en: "industrial", zh: "工业的" },
+      { en: "inevitable", zh: "不可避免" },   { en: "influential", zh: "有影响力" },
+      { en: "ingredient", zh: "成分" },       { en: "initiative", zh: "主动性" },
+      { en: "innovation", zh: "创新" },       { en: "instrument", zh: "工具" },
+      { en: "intellectual", zh: "智力的" },   { en: "intelligence", zh: "智力" },
+      { en: "interaction", zh: "互动" },      { en: "interpret", zh: "解释" },
+      { en: "investigate", zh: "调查" },      { en: "journalism", zh: "新闻业" },
+      { en: "legislation", zh: "立法" },      { en: "likelihood", zh: "可能性" },
+      { en: "maintenance", zh: "维护" },      { en: "manuscript", zh: "手稿" },
+      { en: "mechanism", zh: "机制" },        { en: "metropolitan", zh: "大都市的" },
+      { en: "misfortune", zh: "不幸" },       { en: "monopoly", zh: "垄断" },
+      { en: "mysterious", zh: "神秘" },       { en: "negotiate", zh: "谈判" },
+      { en: "nightmare", zh: "噩梦" },        { en: "obligation", zh: "义务" },
+      { en: "occupation", zh: "职业" },       { en: "occurrence", zh: "发生" },
+      { en: "opposition", zh: "反对" },       { en: "orientation", zh: "方向" },
+      { en: "overwhelming", zh: "压倒性" },   { en: "participation", zh: "参与" },
+      { en: "personality", zh: "个性" },      { en: "perspective", zh: "观点" },
+      { en: "phenomenon", zh: "现象" },       { en: "philosophy", zh: "哲学" },
+      { en: "politician", zh: "政治家" },     { en: "population", zh: "人口" },
+      { en: "possession", zh: "财产" },       { en: "preference", zh: "偏好" },
+      { en: "prejudice", zh: "偏见" },        { en: "prescription", zh: "处方" },
+      { en: "prestigious", zh: "有声望的" },  { en: "privilege", zh: "特权" },
+      { en: "proceeding", zh: "程序" },       { en: "profession", zh: "职业" },
+      { en: "proportion", zh: "比例" },       { en: "prosperity", zh: "繁荣" },
+      { en: "psychology", zh: "心理学" },     { en: "publication", zh: "出版物" },
+      { en: "reasonable", zh: "合理" },       { en: "recognition", zh: "认可" },
+      { en: "reflection", zh: "反思" },       { en: "regulation", zh: "规定" },
+      { en: "remarkable", zh: "非凡" },       { en: "reputation", zh: "声誉" },
+      { en: "resistance", zh: "抵抗" },       { en: "resolution", zh: "决议" },
+      { en: "restaurant", zh: "餐厅" },       { en: "revolution", zh: "革命" },
+      { en: "sacrifice", zh: "牺牲" },        { en: "scholarship", zh: "奖学金" },
+      { en: "significant", zh: "重要的" },    { en: "sophisticated", zh: "复杂精密" },
+      { en: "spectacular", zh: "壮观" },      { en: "statistics", zh: "统计学" },
+      { en: "substantial", zh: "实质的" },    { en: "sufficient", zh: "足够" },
+      { en: "suggestion", zh: "建议" },       { en: "supervision", zh: "监督" },
+      { en: "sympathetic", zh: "同情" },      { en: "technology", zh: "技术" },
+      { en: "temperature", zh: "温度" },      { en: "terrorist", zh: "恐怖分子" },
+      { en: "theoretical", zh: "理论的" },    { en: "tournament", zh: "锦标赛" },
+      { en: "tremendous", zh: "巨大" },       { en: "underground", zh: "地下" },
+      { en: "unfortunate", zh: "不幸" },      { en: "university", zh: "大学" },
+      { en: "vocabulary", zh: "词汇" },       { en: "vulnerable", zh: "脆弱" },
+      { en: "withdrawal", zh: "撤回" },       { en: "worthwhile", zh: "值得" },
+    ]
+  },
+  sentences: {
+    easy: [
+      "The cat sat on the mat.",
+      "I like to read good books.",
+      "She runs fast in the park.",
+      "He has a big red ball.",
+      "We go to school each day.",
+      "The sun is very hot today.",
+      "My dog loves to play outside.",
+      "A fish swims in the pond.",
+      "They eat lunch at noon.",
+      "It is a nice warm day.",
+      "She can sing very well.",
+      "He drew a big blue star.",
+      "The bird flew to the tree.",
+      "I want a cup of tea.",
+      "We had fun at the beach.",
+      "The moon shines at night.",
+      "She wrote a short note.",
+      "He made a paper boat.",
+      "The door is wide open.",
+      "I saw a tall green hill."
+    ],
+    medium: [
+      "Learning a new language takes time and practice.",
+      "She decided to travel around the world after graduation.",
+      "The weather was perfect for a long walk in the forest.",
+      "He couldn't believe how much the city had changed.",
+      "Music has always been an important part of her life.",
+      "They spent the whole afternoon working on the project.",
+      "A healthy diet includes plenty of fresh fruits and vegetables.",
+      "The museum was filled with visitors from different countries.",
+      "Reading books can greatly improve your vocabulary and grammar.",
+      "She looked out the window and watched the sunset slowly fade.",
+      "Technology has transformed the way we communicate with each other.",
+      "The team celebrated their victory with great joy and excitement.",
+      "He carefully placed the fragile vase on the wooden shelf.",
+      "Understanding different cultures helps us become more open-minded.",
+      "The concert was so amazing that the crowd cheered for an encore."
+    ],
+    hard: [
+      "Despite the challenging circumstances, she remained remarkably optimistic.",
+      "The intricate relationship between language and thought has fascinated philosophers for centuries.",
+      "When confronted with unexpected obstacles, successful entrepreneurs adapt quickly and persevere.",
+      "Artificial intelligence continues to revolutionize industries that were previously thought immune to automation.",
+      "Environmental conservation requires coordinated efforts from governments, corporations, and individuals alike.",
+      "The professor emphasized that critical thinking skills are essential for navigating complex modern problems.",
+      "Although the experiment failed repeatedly, the researchers maintained their determination and eventually succeeded.",
+      "Cultural heritage preservation plays a crucial role in maintaining the identity and diversity of human civilization.",
+      "International cooperation on climate change has become increasingly urgent as extreme weather events multiply.",
+      "Mastering a foreign language opens doors not only to professional opportunities but also to deeper cultural understanding.",
+      "The phenomenon of globalization has simultaneously connected the world and highlighted profound cultural differences.",
+      "Technological breakthroughs often emerge from the intersection of disciplines that were previously considered unrelated.",
+      "Historical analysis reveals that significant social transformations rarely occur without sustained collective effort.",
+      "The complexity of the human brain remains one of the greatest frontiers of scientific exploration today."
+    ]
+  },
+  paragraphs: {
+    easy: [
+      "Reading is one of the best ways to learn English. When you read, you see words in real sentences. This helps you understand how words are used. You can start with short stories or news articles. Try to read a little bit every day. Soon you will notice your vocabulary growing.",
+      "Music is a wonderful way to practice English. Listen to songs you enjoy and try to understand the lyrics. You can look up words you don't know. Singing along helps with pronunciation too. It makes learning feel fun and natural.",
+      "Making friends with English speakers is very helpful. You can practice speaking and listening in real conversations. Don't be afraid to make mistakes. Everyone makes mistakes when learning a new language. The important thing is to keep trying."
+    ],
+    medium: [
+      "The key to mastering any language lies in consistent practice and genuine curiosity. Rather than treating language learning as a chore, successful learners find ways to integrate English into their daily lives. They watch movies without subtitles, read books that interest them, and seek opportunities to converse with native speakers. This immersive approach transforms passive knowledge into active skill, allowing learners to think directly in English rather than translating from their native tongue.",
+      "Vocabulary acquisition is often cited as one of the most daunting aspects of learning English. However, research suggests that contextual learning is far more effective than rote memorization. When you encounter a new word in a meaningful sentence, your brain creates stronger neural connections. The best strategy is to read widely across different topics, keep a vocabulary journal, and review new words regularly in varied contexts.",
+      "Writing is an often overlooked but powerful tool for language improvement. When you write, you are forced to produce language rather than simply recognize it. Start a daily journal in English, even if it's just a few sentences. Write about your day, your thoughts, or anything that comes to mind. Over time, you will notice improvements in your grammar, sentence structure, and overall fluency."
+    ],
+    hard: [
+      "The acquisition of a second language represents one of the most cognitively demanding yet rewarding endeavors a person can undertake. Neuroscientific research has demonstrated that bilingualism enhances executive function, delays the onset of dementia, and fundamentally alters the brain's architecture. Unlike first language acquisition, which occurs naturally during critical developmental periods, adult language learning requires deliberate effort, metacognitive awareness, and sustained motivation. Yet the benefits extend far beyond mere communication, encompassing enhanced problem-solving abilities and greater cultural empathy.",
+      "Literature has long served as both a mirror reflecting society and a window into unfamiliar worlds. For English learners, engaging with literary works presents unique challenges and opportunities. The richness of vocabulary, the complexity of narrative structures, and the cultural embeddedness of literary references demand sophisticated comprehension skills. However, the rewards are substantial: literature provides authentic language in emotionally resonant contexts, exposes learners to diverse registers and styles, and cultivates the kind of deep reading that academic and professional success increasingly demands in our age of superficial information consumption.",
+      "The intersection of technology and language education has created unprecedented opportunities for autonomous learning. Digital platforms now offer adaptive algorithms that personalize vocabulary exercises, speech recognition tools that provide immediate pronunciation feedback, and immersive virtual environments where learners can practice conversation with AI-powered agents. Yet the fundamental principles of effective language learning remain unchanged: motivation, consistent exposure, meaningful interaction, and the courage to make mistakes. Technology serves best as an amplifier of good learning habits rather than a replacement for them."
+    ]
+  }
+};
+
+// ========== STATE ==========
+const state = {
+  mode: 'words',
+  difficulty: 'easy',
+  text: '',
+  chars: [],
+  cursorPos: 0,
+  started: false,
+  finished: false,
+  startTime: null,
+  timerInterval: null,
+  elapsed: 0,
+  totalKeystrokes: 0,
+  errors: 0,
+  // Dictation specific
+  zhWords: [],         // [{zh, en}] for current dictation round
+  revealAnswer: false, // whether to show English answer in dictation
+  selectedWords: []    // current round's word objects (for review)
+};
+
+// ========== DOM ==========
+const els = {
+  textDisplay: document.getElementById('textDisplay'),
+  textScroll: document.getElementById('textScroll'),
+  textPlaceholder: document.getElementById('textPlaceholder'),
+  hiddenInput: document.getElementById('hiddenInput'),
+  focusHint: document.getElementById('focusHint'),
+  timer: document.getElementById('timer'),
+  wpm: document.getElementById('wpm'),
+  accuracy: document.getElementById('accuracy'),
+  progress: document.getElementById('progress'),
+  modalOverlay: document.getElementById('modalOverlay'),
+  modalTitle: document.getElementById('modalTitle'),
+  resultTime: document.getElementById('resultTime'),
+  resultWPM: document.getElementById('resultWPM'),
+  resultAcc: document.getElementById('resultAcc'),
+  resultErrors: document.getElementById('resultErrors'),
+  trophyEmoji: document.getElementById('trophyEmoji'),
+  zhReference: document.getElementById('zhReference'),
+  zhTags: document.getElementById('zhTags'),
+  revealToggle: document.getElementById('revealToggle'),
+  revealBtn: document.getElementById('revealBtn'),
+  wordReview: document.getElementById('wordReview'),
+  diffTabs: document.getElementById('diffTabs'),
+};
+
+// ========== INIT ==========
+function init() {
+  // Mode tabs
+  document.querySelectorAll('.mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+  });
+  // Diff tabs
+  document.querySelectorAll('.diff-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchDiff(btn.dataset.diff));
+  });
+
+  // Click on text display to focus
+  els.textDisplay.addEventListener('click', () => {
+    els.hiddenInput.focus();
+    els.textDisplay.classList.add('focused');
+    els.focusHint.classList.add('hidden');
+  });
+
+  // Click on keyboard
+  document.getElementById('keyboard').addEventListener('click', () => {
+    els.hiddenInput.focus();
+    els.textDisplay.classList.add('focused');
+    els.focusHint.classList.add('hidden');
+  });
+
+  // Hidden input events
+  els.hiddenInput.addEventListener('keydown', handleKeyDown);
+  els.hiddenInput.addEventListener('blur', () => {
+    els.textDisplay.classList.remove('focused');
+    els.focusHint.classList.remove('hidden');
+  });
+  els.hiddenInput.addEventListener('focus', () => {
+    els.textDisplay.classList.add('focused');
+    els.focusHint.classList.add('hidden');
+  });
+
+  // Modal buttons
+  document.getElementById('btnRetry').addEventListener('click', retry);
+  document.getElementById('btnNext').addEventListener('click', () => {
+    closeModal();
+    generateText();
+  });
+
+  // Reveal toggle
+  els.revealBtn.addEventListener('click', toggleReveal);
+
+  // ESC to close modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.finished) {
+      closeModal();
+      generateText();
+    }
+  });
+
+  generateText();
+}
+
+// ========== MODE & DIFFICULTY ==========
+function switchMode(mode) {
+  state.mode = mode;
+  state.revealAnswer = false;
+  document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  
+  // Show/hide difficulty tabs (hidden in sentence/paragraph mode? no, always show)
+  // Show/hide dictation-specific UI
+  const isDictation = mode === 'dictation';
+  els.zhReference.style.display = isDictation ? 'flex' : 'none';
+  els.revealToggle.style.display = isDictation ? 'block' : 'none';
+  els.revealBtn.textContent = '👁️ 显示当前单词英文';
+  els.revealBtn.classList.remove('revealed');
+  
+  generateText();
+}
+
+function switchDiff(diff) {
+  state.difficulty = diff;
+  document.querySelectorAll('.diff-tab').forEach(b => b.classList.toggle('active', b.dataset.diff === diff));
+  generateText();
+}
+
+// ========== TEXT GENERATION ==========
+function generateText() {
+  resetState();
+  state.revealAnswer = false;
+  els.revealBtn.textContent = '👁️ 显示当前单词英文';
+  els.revealBtn.classList.remove('revealed');
+
+  if (state.mode === 'dictation') {
+    generateDictation();
+  } else if (state.mode === 'words') {
+    const pool = data.words[state.difficulty];
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    state.selectedWords = shuffled.slice(0, 10);
+    state.text = state.selectedWords.map(w => w.en).join(' ');
+    state.zhWords = [];
+  } else if (state.mode === 'sentences') {
+    const pool = data.sentences[state.difficulty];
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    state.text = shuffled.slice(0, 5).join(' ');
+    state.zhWords = [];
+  } else {
+    const pool = data.paragraphs[state.difficulty];
+    state.text = pool[Math.floor(Math.random() * pool.length)];
+    state.zhWords = [];
+  }
+
+  // Build chars array
+  state.chars = state.text.split('').map(c => ({ char: c, status: 'untyped' }));
+  state.cursorPos = 0;
+  
+  renderText();
+  renderZhReference();
+  clearKeyboardHighlight();
+  updateStats();
+  els.hiddenInput.value = '';
+  els.hiddenInput.focus();
+  els.textDisplay.classList.add('focused');
+  els.focusHint.classList.add('hidden');
+}
+
+function generateDictation() {
+  const pool = data.words[state.difficulty];
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  state.selectedWords = shuffled.slice(0, 10);
+  state.zhWords = state.selectedWords.map(w => w.zh);
+  state.text = state.selectedWords.map(w => w.en).join(' ');
+}
+
+function resetState() {
+  clearInterval(state.timerInterval);
+  state.started = false;
+  state.finished = false;
+  state.startTime = null;
+  state.timerInterval = null;
+  state.elapsed = 0;
+  state.totalKeystrokes = 0;
+  state.errors = 0;
+  state.cursorPos = 0;
+  state.zhWords = [];
+  state.selectedWords = [];
+  updateStats();
+}
+
+function retry() {
+  closeModal();
+  state.revealAnswer = false;
+  els.revealBtn.textContent = '👁️ 显示当前单词英文';
+  els.revealBtn.classList.remove('revealed');
+  state.chars = state.text.split('').map(c => ({ char: c, status: 'untyped' }));
+  state.cursorPos = 0;
+  state.started = false;
+  state.finished = false;
+  state.startTime = null;
+  clearInterval(state.timerInterval);
+  state.timerInterval = null;
+  state.elapsed = 0;
+  state.totalKeystrokes = 0;
+  state.errors = 0;
+  renderText();
+  renderZhReference();
+  clearKeyboardHighlight();
+  updateStats();
+  els.hiddenInput.value = '';
+  els.hiddenInput.focus();
+  els.textDisplay.classList.add('focused');
+}
+
+// ========== REVEAL TOGGLE ==========
+function toggleReveal() {
+  state.revealAnswer = !state.revealAnswer;
+  if (state.revealAnswer) {
+    els.revealBtn.textContent = '🙈 隐藏当前单词';
+    els.revealBtn.classList.add('revealed');
+  } else {
+    els.revealBtn.textContent = '👁️ 显示当前单词英文';
+    els.revealBtn.classList.remove('revealed');
+  }
+  renderText();
+}
+
+// ========== KEY HANDLER ==========
+function handleKeyDown(e) {
+  if (state.finished) return;
+
+  const ignoreKeys = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Insert', 'PageUp', 'PageDown', 'Home', 'End'];
+  
+  if (ignoreKeys.includes(e.key)) return;
+
+  if (!state.started) {
+    startTimer();
+  }
+
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (state.cursorPos > 0) {
+      state.cursorPos--;
+      state.chars[state.cursorPos].status = 'untyped';
+    }
+    renderText();
+    renderZhReference();
+    highlightKey('Backspace');
+    return;
+  }
+
+  if (e.key.length === 1) {
+    e.preventDefault();
+    state.totalKeystrokes++;
+    
+    if (state.cursorPos < state.chars.length) {
+      const expected = state.chars[state.cursorPos].char;
+      if (e.key === expected) {
+        state.chars[state.cursorPos].status = 'correct';
+      } else {
+        state.chars[state.cursorPos].status = 'wrong';
+        state.errors++;
+      }
+      state.cursorPos++;
+    }
+
+    renderText();
+    renderZhReference();
+    highlightKey(e.key);
+    updateStats();
+    checkCompletion();
+  }
+}
+
+// ========== TIMER ==========
+function startTimer() {
+  state.started = true;
+  state.startTime = Date.now();
+  state.timerInterval = setInterval(() => {
+    state.elapsed = Date.now() - state.startTime;
+    updateStats();
+  }, 200);
+}
+
+// ========== STATS ==========
+function updateStats() {
+  const secs = Math.floor(state.elapsed / 1000);
+  const mins = Math.floor(secs / 60);
+  const remaining = secs % 60;
+  els.timer.textContent = `${mins}:${remaining.toString().padStart(2, '0')}`;
+
+  const typedCorrect = state.chars.filter(c => c.status === 'correct').length;
+  const minsFloat = state.elapsed / 60000;
+  const wpmVal = minsFloat > 0 ? Math.round((typedCorrect / 5) / minsFloat) : 0;
+  els.wpm.textContent = wpmVal;
+
+  const totalTyped = state.chars.filter(c => c.status !== 'untyped').length;
+  const accVal = totalTyped > 0 ? Math.round((typedCorrect / totalTyped) * 100) : 100;
+  els.accuracy.textContent = `${accVal}%`;
+
+  const progressVal = state.chars.length > 0 ? Math.round((totalTyped / state.chars.length) * 100) : 0;
+  els.progress.textContent = `${progressVal}%`;
+}
+
+// ========== COMPLETION ==========
+function checkCompletion() {
+  if (state.cursorPos >= state.chars.length) {
+    state.finished = true;
+    clearInterval(state.timerInterval);
+    
+    const typedCorrect = state.chars.filter(c => c.status === 'correct').length;
+    const minsFloat = state.elapsed / 60000;
+    const finalWPM = minsFloat > 0 ? Math.round((typedCorrect / 5) / minsFloat) : 0;
+    const totalTyped = state.chars.filter(c => c.status !== 'untyped').length;
+    const finalAcc = totalTyped > 0 ? Math.round((typedCorrect / totalTyped) * 100) : 100;
+
+    const secs = Math.floor(state.elapsed / 1000);
+    const mins = Math.floor(secs / 60);
+    const rem = secs % 60;
+    els.resultTime.textContent = `${mins}:${rem.toString().padStart(2, '0')}`;
+    els.resultWPM.textContent = finalWPM;
+    els.resultAcc.textContent = `${finalAcc}%`;
+    els.resultErrors.textContent = state.errors;
+    
+    // Trophy
+    if (finalAcc >= 98) {
+      els.trophyEmoji.textContent = '🏆';
+    } else if (finalAcc >= 90) {
+      els.trophyEmoji.textContent = '🥇';
+    } else if (finalAcc >= 75) {
+      els.trophyEmoji.textContent = '🥈';
+    } else {
+      els.trophyEmoji.textContent = '💪';
+    }
+
+    // Modal title
+    els.modalTitle.textContent = state.mode === 'dictation' ? '默写完成！' : '练习完成！';
+
+    // Word review for dictation mode
+    if (state.mode === 'dictation' && state.selectedWords.length > 0) {
+      buildWordReview();
+      els.wordReview.style.display = 'block';
+    } else {
+      els.wordReview.style.display = 'none';
+    }
+
+    els.modalOverlay.style.display = 'flex';
+    clearKeyboardHighlight();
+  }
+}
+
+function buildWordReview() {
+  // Reconstruct which words were typed correctly by analyzing chars
+  const text = state.text; // e.g., "cat dog run"
+  const wordStarts = [];
+  let pos = 0;
+  const words = text.split(' ');
+  for (const w of words) {
+    wordStarts.push(pos);
+    pos += w.length + 1; // +1 for space
+  }
+
+  // For each selected word, check if all its chars were correct
+  let html = '';
+  for (let i = 0; i < state.selectedWords.length; i++) {
+    const word = state.selectedWords[i];
+    const start = wordStarts[i] || 0;
+    const end = start + word.en.length;
+    let allCorrect = true;
+    for (let j = start; j < end && j < state.chars.length; j++) {
+      if (state.chars[j].status !== 'correct') {
+        allCorrect = false;
+        break;
+      }
+    }
+    html += `<div class="review-item">
+      <span class="review-zh">${word.zh}</span>
+      <span class="review-en ${allCorrect ? '' : 'wrong'}">${word.en}</span>
+    </div>`;
+  }
+  els.wordReview.innerHTML = html;
+}
+
+function closeModal() {
+  els.modalOverlay.style.display = 'none';
+}
+
+// ========== RENDER ==========
+function getWordBoundaries() {
+  const text = state.text;
+  const boundaries = [];
+  let pos = 0;
+  const words = text.split(' ');
+  for (const w of words) {
+    boundaries.push({ start: pos, end: pos + w.length });
+    pos += w.length + 1;
+  }
+  return boundaries;
+}
+
+function getCurrentWordIdx(boundaries) {
+  for (let i = 0; i < boundaries.length; i++) {
+    if (state.cursorPos >= boundaries[i].start && state.cursorPos <= boundaries[i].end) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function renderText() {
+  els.textPlaceholder.style.display = 'none';
+  
+  if (state.mode === 'dictation') {
+    // In dictation mode: untyped chars shown as dots
+    // If revealAnswer is on, only the current word shows English
+    const boundaries = getWordBoundaries();
+    const currentWordIdx = getCurrentWordIdx(boundaries);
+    
+    let html = '';
+    for (let i = 0; i < state.chars.length; i++) {
+      const c = state.chars[i];
+      let cls = `text-char ${c.status}`;
+      if (i === state.cursorPos) cls += ' current';
+      
+      // Which word does this char belong to?
+      let charWordIdx = -1;
+      for (let w = 0; w < boundaries.length; w++) {
+        if (i >= boundaries[w].start && i < boundaries[w].end) {
+          charWordIdx = w;
+          break;
+        }
+      }
+      
+      let display;
+      if (c.char === ' ') {
+        display = '&nbsp;';
+      } else if (c.status !== 'untyped') {
+        // Already typed (correct or wrong): show actual char
+        display = escapeHtml(c.char);
+      } else if (state.revealAnswer && charWordIdx === currentWordIdx) {
+        // Reveal is on AND this char belongs to the current word: show English
+        display = escapeHtml(c.char);
+      } else {
+        // Hidden: show dot
+        display = '·';
+      }
+      html += `<span class="${cls}">${display}</span>`;
+    }
+    els.textScroll.innerHTML = html;
+  } else {
+    // Normal mode: show all characters
+    let html = '';
+    for (let i = 0; i < state.chars.length; i++) {
+      const c = state.chars[i];
+      let cls = `text-char ${c.status}`;
+      if (i === state.cursorPos) cls += ' current';
+      const display = c.char === ' ' ? '&nbsp;' : escapeHtml(c.char);
+      html += `<span class="${cls}">${display}</span>`;
+    }
+    els.textScroll.innerHTML = html;
+  }
+
+  // Auto-scroll
+  if (state.cursorPos > 0) {
+    const cursorEl = els.textScroll.querySelector('.current');
+    if (cursorEl) {
+      cursorEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+}
+
+function renderZhReference() {
+  if (state.mode !== 'dictation' || state.zhWords.length === 0) return;
+
+  const boundaries = getWordBoundaries();
+  let currentWordIdx = getCurrentWordIdx(boundaries);
+  // If cursor is past all words, mark last word as current
+  const totalChars = state.text.length;
+  if (currentWordIdx === -1 && state.cursorPos >= totalChars) {
+    currentWordIdx = boundaries.length - 1;
+  }
+
+  // Check which words are done (all chars correct)
+  let html = '';
+  for (let i = 0; i < state.zhWords.length; i++) {
+    const zh = state.zhWords[i];
+    let cls = 'zh-tag';
+    
+    if (i < boundaries.length) {
+      const wb = boundaries[i];
+      let allCorrect = true;
+      let anyTyped = false;
+      for (let j = wb.start; j < wb.end && j < state.chars.length; j++) {
+        if (state.chars[j].status === 'wrong') allCorrect = false;
+        if (state.chars[j].status !== 'untyped') anyTyped = true;
+        if (state.chars[j].status === 'wrong') allCorrect = false;
+      }
+      // Check: all chars must be correct, not just some
+      let allDone = true;
+      for (let j = wb.start; j < wb.end && j < state.chars.length; j++) {
+        if (state.chars[j].status !== 'correct') {
+          allDone = false;
+          break;
+        }
+      }
+      
+      if (allDone) {
+        cls += ' done';
+      } else if (anyTyped) {
+        // Check if any wrong in this word
+        let hasWrong = false;
+        for (let j = wb.start; j < wb.end && j < state.chars.length; j++) {
+          if (state.chars[j].status === 'wrong') { hasWrong = true; break; }
+        }
+        if (hasWrong) cls += ' wrong-word';
+      }
+    }
+    
+    if (i === currentWordIdx) {
+      cls += ' current-word';
+    }
+    
+    html += `<span class="${cls}"><span class="zh-index">${i+1}.</span>${zh}</span>`;
+  }
+  els.zhTags.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ========== KEYBOARD HIGHLIGHT ==========
+function highlightKey(key) {
+  clearKeyboardHighlight();
+  
+  let target = key.toLowerCase();
+  if (key === ' ') target = 'space';
+  if (key === 'Backspace') target = 'backspace';
+  
+  const allKeys = document.querySelectorAll('.key');
+  allKeys.forEach(k => {
+    const text = k.textContent.trim().toLowerCase();
+    if (text === target) {
+      k.classList.add('highlight');
+    }
+  });
+}
+
+function clearKeyboardHighlight() {
+  document.querySelectorAll('.key.highlight').forEach(k => k.classList.remove('highlight'));
+}
+
+// ========== START ==========
+init();
+</script>
+
+</body>
+</html>
