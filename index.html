@@ -1159,6 +1159,7 @@ function init() {
 
   // Mobile input events
   els.mobileInput.addEventListener('input', handleMobileInput);
+  els.mobileInput.addEventListener('keydown', handleMobileKeyDown);
   els.mobileInput.addEventListener('blur', () => {
     els.textDisplay.classList.remove('focused');
     els.focusHint.classList.remove('hidden');
@@ -1366,27 +1367,29 @@ function handleMobileInput(e) {
   if (state.finished) return;
 
   const val = els.mobileInput.value;
-  
+
   if (!state.started && val.length > 0) {
     startTimer();
   }
 
-  // Process added characters
-  while (prevMobileValue.length < val.length) {
-    const idx = prevMobileValue.length;
-    processTypedChar(val[idx]);
-    prevMobileValue += val[idx];
+  // Process added characters (input should have at least one new char)
+  if (val.length > prevMobileValue.length) {
+    for (let i = prevMobileValue.length; i < val.length; i++) {
+      processTypedChar(val[i]);
+    }
   }
 
-  // Process deletions
-  while (val.length < prevMobileValue.length) {
-    processBackspace();
-    prevMobileValue = prevMobileValue.slice(0, -1);
-  }
-
-  // Reset tracking (input already cleared below)
+  // Clear the input for next keystroke
   els.mobileInput.value = '';
   prevMobileValue = '';
+}
+
+// Handle backspace on mobile (keydown still fires for Backspace)
+function handleMobileKeyDown(e) {
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    processBackspace();
+  }
 }
 
 // ========== TIMER ==========
